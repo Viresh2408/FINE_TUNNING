@@ -28,11 +28,24 @@ async def load_model():
     print(f"Loading model {model_id}...")
     try:
         tokenizer = AutoTokenizer.from_pretrained(model_id)
-        model = AutoModelForCausalLM.from_pretrained(
-            model_id,
+        
+        # Load base model meta-llama/Llama-3.2-3B-Instruct and apply adapters
+        base_model_id = "meta-llama/Llama-3.2-3B-Instruct"
+        print(f"Loading base model: {base_model_id}")
+        
+        use_bf16 = torch.cuda.is_available() and torch.cuda.is_bf16_supported()
+        dtype = torch.bfloat16 if use_bf16 else torch.float32
+        
+        base_model = AutoModelForCausalLM.from_pretrained(
+            base_model_id,
             device_map="auto",
-            torch_dtype=torch.bfloat16
+            torch_dtype=dtype,
+            low_cpu_mem_usage=True
         )
+        
+        from peft import PeftModel
+        print(f"Applying PEFT adapter: {model_id}")
+        model = PeftModel.from_pretrained(base_model, model_id)
         model.eval()
         print("Model loaded successfully!")
     except Exception as e:

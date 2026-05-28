@@ -95,6 +95,7 @@ def mock_model():
 def patch_transformers(monkeypatch, mock_tokenizer, mock_model):
     """Automatically intercepts Hugging Face model and tokenizer loads in tests."""
     import transformers
+    import peft
     
     # Patch AutoTokenizer from_pretrained
     monkeypatch.setattr(
@@ -107,5 +108,12 @@ def patch_transformers(monkeypatch, mock_tokenizer, mock_model):
     monkeypatch.setattr(
         transformers.AutoModelForCausalLM, 
         "from_pretrained", 
+        lambda *args, **kwargs: mock_model
+    )
+    
+    # Patch PeftModel from_pretrained to prevent PyTorch module attribute errors
+    monkeypatch.setattr(
+        peft.PeftModel,
+        "from_pretrained",
         lambda *args, **kwargs: mock_model
     )
