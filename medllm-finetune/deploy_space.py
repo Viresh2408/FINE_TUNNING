@@ -90,7 +90,7 @@ HF_TOKEN = os.environ.get("HF_TOKEN", "")
 MODEL_ID = "Viresh24/medllm-lora"
 client = InferenceClient(model=MODEL_ID, token=HF_TOKEN)
 
-def generate_medical_response(question, history):
+def generate_medical_response(question):
     # Wrap in instruction prompt template
     prompt = f"[INST] {question.strip()} [/INST]"
     
