@@ -73,63 +73,73 @@ python_version: "3.10"
 Interactive Web UI for **Llama 3.2 3B Instruct** fine-tuned on medical Q&A using QLoRA.
 """
 
-    # Pin huggingface_hub<0.25.0 to maintain HfFolder backward compatibility with Gradio 4.x
-    requirements_content = """huggingface_hub<0.25.0
+    # Add transformers, peft, and accelerate dependencies for local CPU inference
+    requirements_content = """transformers
+peft
+accelerate
+huggingface_hub<0.25.0
 gradio>=4.0.0
+torch
 """
 
-    # Gradio Web UI app.py with robust exponential backoff retry logic for DNS resolution
+    # Gradio Web UI app.py loading model locally on CPU using TextIteratorStreamer
     app_py_content = """import os
-import time
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer, TextIteratorStreamer
+from peft import PeftModel
+from threading import Thread
 import gradio as gr
-from huggingface_hub import InferenceClient
 
 # Retrieve token securely from Hugging Face Space Settings
 HF_TOKEN = os.environ.get("HF_TOKEN", "")
 
-# Load the fine-tuned adapter on top of the base model via High-Speed Serverless API
-MODEL_ID = "Viresh24/medllm-lora"
-client = InferenceClient(model=MODEL_ID, token=HF_TOKEN)
+MODEL_ID = "meta-llama/Llama-3.2-3B-Instruct"
+ADAPTER_ID = "Viresh24/medllm-lora"
+
+print("--- Initializing Local CPU Inference Pipeline ---")
+print("Loading tokenizer...")
+tokenizer = AutoTokenizer.from_pretrained(ADAPTER_ID, token=HF_TOKEN)
+
+print("Loading base Llama 3.2 3B Instruct model in bfloat16 on CPU...")
+base_model = AutoModelForCausalLM.from_pretrained(
+    MODEL_ID,
+    torch_dtype=torch.bfloat16,
+    low_cpu_mem_usage=True,
+    token=HF_TOKEN
+)
+
+print("Merging PEFT LoRA adapters locally...")
+model = PeftModel.from_pretrained(base_model, ADAPTER_ID, token=HF_TOKEN)
+model.eval()
+print("SUCCESS: Local CPU Pipeline loaded successfully!")
 
 def generate_medical_response(question):
     # Wrap in instruction prompt template
     prompt = f"[INST] {question.strip()} [/INST]"
+    inputs = tokenizer(prompt, return_tensors="pt")
     
-    max_retries = 3
-    retry_delay = 2.0  # seconds
+    # TextIteratorStreamer is ideal for asynchronous streaming output
+    streamer = TextIteratorStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True)
     
-    for attempt in range(max_retries):
-        try:
-            # Stream response token by token
-            stream = client.text_generation(
-                prompt,
-                max_new_tokens=512,
-                temperature=0.1,
-                top_p=0.9,
-                stream=True
-            )
-            
-            partial_response = ""
-            for chunk in stream:
-                partial_response += chunk
-                yield partial_response
-            return  # Successful stream completion, exit loop
-            
-        except Exception as e:
-            err_msg = str(e)
-            # Check for network/DNS name resolution glitches
-            is_network_err = "failed to resolve" in err_msg.lower() or "connection" in err_msg.lower()
-            
-            if is_network_err and attempt < max_retries - 1:
-                yield f"⚠️ Temporary network delay inside Hugging Face sandboxed DNS. Retrying connection (Attempt {attempt + 1}/{max_retries}) in {retry_delay}s..."
-                time.sleep(retry_delay)
-                retry_delay *= 2.0  # Exponential backoff
-            else:
-                if "gated model" in err_msg.lower() or "authorization" in err_msg.lower():
-                    yield "🔒 Access Error: Hugging Face serverless API requires authorization. Make sure the Space Secret 'HF_TOKEN' is set correctly in your Space Settings."
-                else:
-                    yield f"❌ Error querying Hugging Face Inference API: {err_msg}"
-                return
+    generation_kwargs = dict(
+        **inputs,
+        streamer=streamer,
+        max_new_tokens=512,
+        do_sample=True,
+        temperature=0.1,
+        top_p=0.9,
+        pad_token_id=tokenizer.eos_token_id
+    )
+    
+    # Run text generation in a separate background thread
+    thread = Thread(target=model.generate, kwargs=generation_kwargs)
+    thread.start()
+    
+    # Yield streamed text token by token
+    partial_response = ""
+    for chunk in streamer:
+        partial_response += chunk
+        yield partial_response
 
 # Premium HSL Custom CSS Styling
 custom_css = \"\"\"
@@ -174,7 +184,7 @@ footer {visibility: hidden}
 with gr.Blocks(css=custom_css, theme=gr.themes.Soft(primary_hue="blue", secondary_hue="indigo")) as demo:
     gr.HTML(\"\"\"
         <div class="title-box">
-            <h1>🩺 MedLLM Interactive Assistant</h1>
+            <h1>%EF%B8%8F MedLLM Interactive Assistant</h1>
             <p>Meta's Llama 3.2 3B Instruct fine-tuned on Medical Q&A (QLoRA)</p>
         </div>
     \"\"\")
@@ -186,7 +196,7 @@ with gr.Blocks(css=custom_css, theme=gr.themes.Soft(primary_hue="blue", secondar
                 placeholder="Type your medical query here... (e.g. What are the common symptoms of hypothyroidism?)",
                 label="Ask a medical question"
             )
-            submit_btn = gr.Button("Generate Answer 🚀", variant="primary")
+            submit_btn = gr.Button("Generate Answer %F0%9F%9A%80", variant="primary")
             
         with gr.Column(scale=3):
             output_box = gr.Textbox(
@@ -206,7 +216,7 @@ with gr.Blocks(css=custom_css, theme=gr.themes.Soft(primary_hue="blue", secondar
     
     gr.HTML(\"\"\"
         <div class="warning-box">
-            <p>⚠️ <strong>Disclaimer:</strong> This model is an AI research proof-of-concept. It is not a certified medical tool or clinical decision support system. Information generated is purely educational and should not replace professional medical diagnosis or consultation.</p>
+            <p>%E2%9A%A0%EF%B8%8F <strong>Disclaimer:</strong> This model is an AI research proof-of-concept. It is not a certified medical tool or clinical decision support system. Information generated is purely educational and should not replace professional medical diagnosis or consultation.</p>
         </div>
     \"\"\")
         
