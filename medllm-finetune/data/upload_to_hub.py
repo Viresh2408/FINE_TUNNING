@@ -28,7 +28,7 @@ def main():
         }
     )
     
-    repo_id = "Viresh2408/medqa-instruct"
+    repo_id = "Viresh24/medqa-instruct"
     print(f"Pushing dataset to Hugging Face Hub: {repo_id}")
     dataset.push_to_hub(repo_id, private=False)
     print("Dataset successfully pushed to the Hub!")

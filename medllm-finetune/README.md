@@ -73,9 +73,9 @@ Fine-tuning results showing a comparison of the base model versus the **MedLLM**
 
 ## 🔗 Project Resources & Artifacts
 
-*   **Hugging Face Fine-tuned Model (Adapters):** [Viresh2408/medllm-lora](https://huggingface.co/Viresh2408/medllm-lora)
-*   **Hugging Face Instruction Dataset:** [Viresh2408/medqa-instruct](https://huggingface.co/datasets/Viresh2408/medqa-instruct)
-*   **Hugging Face Space Live Demo:** [Viresh2408/medllm-demo](https://huggingface.co/spaces/Viresh2408/medllm-demo)
+*   **Hugging Face Fine-tuned Model (Adapters):** [Viresh24/medllm-lora](https://huggingface.co/Viresh24/medllm-lora)
+*   **Hugging Face Instruction Dataset:** [Viresh24/medqa-instruct](https://huggingface.co/datasets/Viresh24/medqa-instruct)
+*   **Hugging Face Space Live Demo:** [Viresh24/medllm-demo](https://huggingface.co/spaces/Viresh24/medllm-demo)
 
 ---
 
@@ -165,7 +165,7 @@ python train/finetune.py
 Run automated tests comparing generated text with ground-truth test data:
 ```bash
 # Computes ROUGE and BERTScore metrics
-python eval/evaluate.py --adapter_path "Viresh2408/medllm-lora" --max_samples 200
+python eval/evaluate.py --adapter_path "Viresh24/medllm-lora" --max_samples 200
 
 # Runs the Gemini-based Clinician Judge
 python eval/llm_judge.py

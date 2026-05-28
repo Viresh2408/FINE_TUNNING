@@ -13,7 +13,7 @@ app = FastAPI(title="MedLLM API", description="Inference API for MedLLM fine-tun
 # Global variables for model and tokenizer
 model = None
 tokenizer = None
-model_id = "Viresh2408/medllm-lora"  # Assume pulling merged model from Hub or local
+model_id = "Viresh24/medllm-lora"  # Assume pulling merged model from Hub or local
 # To use local merged model, use model_id = "../train/medllm-merged"
 
 class GenerateRequest(BaseModel):
