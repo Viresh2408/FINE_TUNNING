@@ -55,7 +55,7 @@ def main():
     # 4. Prepare local deployment assets
     print("Creating temporary build assets locally...")
     
-    # Readme metadata header
+    # Readme metadata header with python_version: 3.10 configuration
     readme_content = """---
 title: MedLLM Assistant
 emoji: 🩺
@@ -66,6 +66,7 @@ sdk_version: 4.37.2
 app_file: app.py
 pinned: false
 license: apache-2.0
+python_version: 3.10
 ---
 
 # 🩺 MedLLM Interactive Demo
@@ -208,7 +209,7 @@ if __name__ == "__main__":
     demo.launch()
 """
 
-    # 5. Push files to the Hub
+# 5. Push files to the Hub
     print("Uploading deployment files directly to Hugging Face...")
     try:
         api.upload_file(
