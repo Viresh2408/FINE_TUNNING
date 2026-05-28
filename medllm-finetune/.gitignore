@@ -6,3 +6,5 @@ results/
 medllm-lora/
 medllm-merged/
 data/processed/
+local_adapter/
+local_api_adapter/

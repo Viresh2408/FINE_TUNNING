@@ -83,11 +83,13 @@ torch
 """
 
     # Gradio Web UI app.py loading model locally on CPU using TextIteratorStreamer
-    # Loaded tokenizer from base model MODEL_ID to prevent TokenizersBackend ValueError
+    # Incorporates automated PEFT config sanitization to strip incompatible custom parameters
     app_py_content = """import os
+import json
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, TextIteratorStreamer
 from peft import PeftModel
+from huggingface_hub import hf_hub_download
 from threading import Thread
 import gradio as gr
 
@@ -109,8 +111,33 @@ base_model = AutoModelForCausalLM.from_pretrained(
     token=HF_TOKEN
 )
 
+print("Sanitizing and downloading PEFT adapters locally...")
+local_adapter_dir = "./local_adapter"
+os.makedirs(local_adapter_dir, exist_ok=True)
+
+# 1. Download adapter weights
+try:
+    print("Downloading adapter_model.safetensors...")
+    hf_hub_download(repo_id=ADAPTER_ID, filename="adapter_model.safetensors", token=HF_TOKEN, local_dir=local_adapter_dir)
+except Exception:
+    print("safetensors fallback: Downloading adapter_model.bin...")
+    hf_hub_download(repo_id=ADAPTER_ID, filename="adapter_model.bin", token=HF_TOKEN, local_dir=local_adapter_dir)
+
+# 2. Download and sanitize adapter_config.json to strip custom/incompatible keys
+config_cache_path = hf_hub_download(repo_id=ADAPTER_ID, filename="adapter_config.json", token=HF_TOKEN)
+with open(config_cache_path, "r") as f:
+    config = json.load(f)
+
+# Strip incompatible key that crashes LoraConfig initialization
+config.pop("alora_invocation_tokens", None)
+
+# Save the sanitized config locally
+with open(os.path.join(local_adapter_dir, "adapter_config.json"), "w") as f:
+    json.dump(config, f, indent=4)
+print("SUCCESS: Adapters successfully sanitized locally!")
+
 print("Merging PEFT LoRA adapters locally...")
-model = PeftModel.from_pretrained(base_model, ADAPTER_ID, token=HF_TOKEN)
+model = PeftModel.from_pretrained(base_model, local_adapter_dir)
 model.eval()
 print("SUCCESS: Local CPU Pipeline loaded successfully!")
 
