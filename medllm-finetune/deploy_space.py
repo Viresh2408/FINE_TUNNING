@@ -157,11 +157,12 @@ footer {visibility: hidden}
 
 # Build Gradio Blocks Layout
 with gr.Blocks(css=custom_css, theme=gr.themes.Soft(primary_hue="blue", secondary_hue="indigo")) as demo:
-    with gr.Div(elem_classes="title-box"):
-        gr.HTML(\"\"\"
+    gr.HTML(\"\"\"
+        <div class="title-box">
             <h1>🩺 MedLLM Interactive Assistant</h1>
             <p>Meta's Llama 3.2 3B Instruct fine-tuned on Medical Q&A (QLoRA)</p>
-        \"\"\")
+        </div>
+    \"\"\")
         
     with gr.Row():
         with gr.Column(scale=2):
@@ -188,10 +189,11 @@ with gr.Blocks(css=custom_css, theme=gr.themes.Soft(primary_hue="blue", secondar
         inputs=input_box
     )
     
-    with gr.Div(elem_classes="warning-box"):
-        gr.HTML(\"\"\"
+    gr.HTML(\"\"\"
+        <div class="warning-box">
             <p>⚠️ <strong>Disclaimer:</strong> This model is an AI research proof-of-concept. It is not a certified medical tool or clinical decision support system. Information generated is purely educational and should not replace professional medical diagnosis or consultation.</p>
-        \"\"\")
+        </div>
+    \"\"\")
         
     # Wire events
     submit_btn.click(
