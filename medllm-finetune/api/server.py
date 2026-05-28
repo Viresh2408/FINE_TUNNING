@@ -1,4 +1,5 @@
 import torch
+import os
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -27,10 +28,13 @@ async def load_model():
     global model, tokenizer
     print(f"Loading model {model_id}...")
     try:
-        tokenizer = AutoTokenizer.from_pretrained(model_id)
-        
-        # Load base model meta-llama/Llama-3.2-3B-Instruct and apply adapters
+        # Load base model meta-llama/Llama-3.2-3B-Instruct tokenizer and weights
         base_model_id = "meta-llama/Llama-3.2-3B-Instruct"
+        print(f"Loading base model tokenizer: {base_model_id}")
+        hf_token = os.environ.get("HF_TOKEN")
+        tokenizer = AutoTokenizer.from_pretrained(base_model_id, token=hf_token)
+        
+        print(f"Loading base model weights: {base_model_id}")
         print(f"Loading base model: {base_model_id}")
         
         use_bf16 = torch.cuda.is_available() and torch.cuda.is_bf16_supported()
