@@ -87,8 +87,9 @@ torch
     app_py_content = """import os
 import json
 import torch
+import inspect
 from transformers import AutoModelForCausalLM, AutoTokenizer, TextIteratorStreamer
-from peft import PeftModel
+from peft import PeftModel, LoraConfig
 from huggingface_hub import hf_hub_download
 from threading import Thread
 import gradio as gr
@@ -128,12 +129,13 @@ config_cache_path = hf_hub_download(repo_id=ADAPTER_ID, filename="adapter_config
 with open(config_cache_path, "r") as f:
     config = json.load(f)
 
-# Strip incompatible key that crashes LoraConfig initialization
-config.pop("alora_invocation_tokens", None)
+# Dynamically filter config keys based on the installed PEFT version's LoraConfig signature
+lora_config_params = set(inspect.signature(LoraConfig.__init__).parameters.keys())
+sanitized_config = {k: v for k, v in config.items() if k in lora_config_params}
 
 # Save the sanitized config locally
 with open(os.path.join(local_adapter_dir, "adapter_config.json"), "w") as f:
-    json.dump(config, f, indent=4)
+    json.dump(sanitized_config, f, indent=4)
 print("SUCCESS: Adapters successfully sanitized locally!")
 
 print("Merging PEFT LoRA adapters locally...")
