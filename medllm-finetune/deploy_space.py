@@ -78,8 +78,9 @@ Interactive Web UI for **Llama 3.2 3B Instruct** fine-tuned on medical Q&A using
 gradio>=4.0.0
 """
 
-    # Gradio Web UI app.py
+    # Gradio Web UI app.py with robust exponential backoff retry logic for DNS resolution
     app_py_content = """import os
+import time
 import gradio as gr
 from huggingface_hub import InferenceClient
 
@@ -94,27 +95,41 @@ def generate_medical_response(question):
     # Wrap in instruction prompt template
     prompt = f"[INST] {question.strip()} [/INST]"
     
-    try:
-        # Stream response token by token
-        stream = client.text_generation(
-            prompt,
-            max_new_tokens=512,
-            temperature=0.1,
-            top_p=0.9,
-            stream=True
-        )
-        
-        partial_response = ""
-        for chunk in stream:
-            partial_response += chunk
-            yield partial_response
+    max_retries = 3
+    retry_delay = 2.0  # seconds
+    
+    for attempt in range(max_retries):
+        try:
+            # Stream response token by token
+            stream = client.text_generation(
+                prompt,
+                max_new_tokens=512,
+                temperature=0.1,
+                top_p=0.9,
+                stream=True
+            )
             
-    except Exception as e:
-        err_msg = str(e)
-        if "gated model" in err_msg.lower() or "authorization" in err_msg.lower():
-            yield "🔒 Access Error: Hugging Face serverless API requires authorization. Make sure the Space Secret 'HF_TOKEN' is set correctly in your Space Settings."
-        else:
-            yield f"❌ Error querying Hugging Face Inference API: {err_msg}"
+            partial_response = ""
+            for chunk in stream:
+                partial_response += chunk
+                yield partial_response
+            return  # Successful stream completion, exit loop
+            
+        except Exception as e:
+            err_msg = str(e)
+            # Check for network/DNS name resolution glitches
+            is_network_err = "failed to resolve" in err_msg.lower() or "connection" in err_msg.lower()
+            
+            if is_network_err and attempt < max_retries - 1:
+                yield f"⚠️ Temporary network delay inside Hugging Face sandboxed DNS. Retrying connection (Attempt {attempt + 1}/{max_retries}) in {retry_delay}s..."
+                time.sleep(retry_delay)
+                retry_delay *= 2.0  # Exponential backoff
+            else:
+                if "gated model" in err_msg.lower() or "authorization" in err_msg.lower():
+                    yield "🔒 Access Error: Hugging Face serverless API requires authorization. Make sure the Space Secret 'HF_TOKEN' is set correctly in your Space Settings."
+                else:
+                    yield f"❌ Error querying Hugging Face Inference API: {err_msg}"
+                return
 
 # Premium HSL Custom CSS Styling
 custom_css = \"\"\"
