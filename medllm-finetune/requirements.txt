@@ -1,0 +1,15 @@
+transformers
+peft
+trl
+bitsandbytes
+datasets
+wandb
+evaluate
+rouge_score
+bert_score
+fastapi
+uvicorn
+gradio
+pandas
+torch
+pydantic

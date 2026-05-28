@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  api:
+    build: .
+    container_name: medllm-api
+    ports:
+      - "8000:8000"
+    environment:
+      - CUDA_VISIBLE_DEVICES=all
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    volumes:
+      - ~/.cache/huggingface:/root/.cache/huggingface
+    command: uvicorn api.server:app --host 0.0.0.0 --port 8000
+
+  demo:
+    build: .
+    container_name: medllm-demo
+    ports:
+      - "7860:7860"
+    environment:
+      - API_URL=http://api:8000/generate
+    depends_on:
+      - api
+    command: python api/demo.py

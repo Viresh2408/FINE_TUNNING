@@ -1,0 +1,43 @@
+# Environments
+.env
+*.env
+.venv
+venv/
+env/
+ENV/
+
+# Python Cache & Builds
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.ipynb_checkpoints/
+dist/
+build/
+*.egg-info/
+
+# Jupyter & Notebook Checkpoints
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+
+# Model Outputs & Checkpoints (Too large for GitHub)
+results/
+medllm-finetune/results/
+medllm-finetune/train/results/
+medllm-lora/
+medllm-finetune/medllm-lora/
+medllm-merged/
+medllm-finetune/medllm-merged/
+
+# Processed Datasets (Keep raw data out of git)
+data/processed/
+medllm-finetune/data/processed/
+medllm-finetune/eval/predictions.jsonl
+predictions.jsonl
+
+# IDEs & System Files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
