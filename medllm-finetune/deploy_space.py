@@ -55,7 +55,7 @@ def main():
     # 4. Prepare local deployment assets
     print("Creating temporary build assets locally...")
     
-    # Readme metadata header with python_version: 3.10 configuration
+    # Readme metadata header with python_version strictly quoted as "3.10"
     readme_content = """---
 title: MedLLM Assistant
 emoji: 🩺
@@ -66,7 +66,7 @@ sdk_version: 4.37.2
 app_file: app.py
 pinned: false
 license: apache-2.0
-python_version: 3.10
+python_version: "3.10"
 ---
 
 # 🩺 MedLLM Interactive Demo
