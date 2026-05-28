@@ -74,7 +74,7 @@ Interactive Web UI for **Llama 3.2 3B Instruct** fine-tuned on medical Q&A using
 """
 
     # Add transformers, peft, and accelerate dependencies for local CPU inference
-    requirements_content = """huggingface_hub>=0.25.0
+    requirements_content = """huggingface_hub<0.25.0
 gradio>=4.0.0
 """
 
@@ -156,7 +156,7 @@ footer {visibility: hidden}
 with gr.Blocks(css=custom_css, theme=gr.themes.Soft(primary_hue="blue", secondary_hue="indigo")) as demo:
     gr.HTML(\"\"\"
         <div class="title-box">
-            <h1>🩺 MedLLM Interactive Assistant</h1>
+            <h1>\\U0001FA7A MedLLM Interactive Assistant</h1>
             <p>Meta's Llama 3.2 3B Instruct fine-tuned on Medical Q&A (QLoRA)</p>
         </div>
     \"\"\")
@@ -168,7 +168,7 @@ with gr.Blocks(css=custom_css, theme=gr.themes.Soft(primary_hue="blue", secondar
                 placeholder="Type your medical query here... (e.g. What are the common symptoms of hypothyroidism?)",
                 label="Ask a medical question"
             )
-            submit_btn = gr.Button("Generate Answer 🚀", variant="primary")
+            submit_btn = gr.Button("Generate Answer \\U0001F680", variant="primary")
             
         with gr.Column(scale=3):
             output_box = gr.Textbox(
@@ -188,7 +188,7 @@ with gr.Blocks(css=custom_css, theme=gr.themes.Soft(primary_hue="blue", secondar
     
     gr.HTML(\"\"\"
         <div class="warning-box">
-            <p>⚠️ <strong>Disclaimer:</strong> This model is an AI research proof-of-concept. It is not a certified medical tool or clinical decision support system. Information generated is purely educational and should not replace professional medical diagnosis or consultation.</p>
+            <p>\\u26A0\\ufe0f <strong>Disclaimer:</strong> This model is an AI research proof-of-concept. It is not a certified medical tool or clinical decision support system. Information generated is purely educational and should not replace professional medical diagnosis or consultation.</p>
         </div>
     \"\"\")
         
