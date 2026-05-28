@@ -83,6 +83,7 @@ torch
 """
 
     # Gradio Web UI app.py loading model locally on CPU using TextIteratorStreamer
+    # Loaded tokenizer from base model MODEL_ID to prevent TokenizersBackend ValueError
     app_py_content = """import os
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, TextIteratorStreamer
@@ -97,8 +98,8 @@ MODEL_ID = "meta-llama/Llama-3.2-3B-Instruct"
 ADAPTER_ID = "Viresh24/medllm-lora"
 
 print("--- Initializing Local CPU Inference Pipeline ---")
-print("Loading tokenizer...")
-tokenizer = AutoTokenizer.from_pretrained(ADAPTER_ID, token=HF_TOKEN)
+print("Loading tokenizer from base model...")
+tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, token=HF_TOKEN)
 
 print("Loading base Llama 3.2 3B Instruct model in bfloat16 on CPU...")
 base_model = AutoModelForCausalLM.from_pretrained(
