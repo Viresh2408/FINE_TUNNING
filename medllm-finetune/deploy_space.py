@@ -55,7 +55,7 @@ def main():
     # 4. Prepare local deployment assets
     print("Creating temporary build assets locally...")
     
-    # Readme metadata header with python_version strictly quoted as "3.10"
+    # Readme metadata header
     readme_content = """---
 title: MedLLM Assistant
 emoji: 🩺
@@ -73,8 +73,8 @@ python_version: "3.10"
 Interactive Web UI for **Llama 3.2 3B Instruct** fine-tuned on medical Q&A using QLoRA.
 """
 
-    # Requirements file
-    requirements_content = """huggingface_hub
+    # Pin huggingface_hub<0.25.0 to maintain HfFolder backward compatibility with Gradio 4.x
+    requirements_content = """huggingface_hub<0.25.0
 gradio>=4.0.0
 """
 
