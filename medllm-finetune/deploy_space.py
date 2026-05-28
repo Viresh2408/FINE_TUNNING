@@ -74,102 +74,44 @@ Interactive Web UI for **Llama 3.2 3B Instruct** fine-tuned on medical Q&A using
 """
 
     # Add transformers, peft, and accelerate dependencies for local CPU inference
-    requirements_content = """transformers
-peft
-accelerate
-huggingface_hub<0.25.0
+    requirements_content = """huggingface_hub>=0.25.0
 gradio>=4.0.0
-torch
 """
 
-    # Gradio Web UI app.py loading model locally on CPU using TextIteratorStreamer
-    # Incorporates automated PEFT config sanitization to strip incompatible custom parameters
+    # Gradio Web UI app.py using InferenceClient
     app_py_content = """import os
-import json
-import torch
-import inspect
-from transformers import AutoModelForCausalLM, AutoTokenizer, TextIteratorStreamer
-from peft import PeftModel, LoraConfig
-from huggingface_hub import hf_hub_download
-from threading import Thread
+from huggingface_hub import InferenceClient
 import gradio as gr
 
 # Retrieve token securely from Hugging Face Space Settings
 HF_TOKEN = os.environ.get("HF_TOKEN", "")
 
-MODEL_ID = "meta-llama/Llama-3.2-3B-Instruct"
-ADAPTER_ID = "Viresh24/medllm-lora"
+# Standard repository identifier pointing to your fine-tuned model
+MODEL_ID = "Viresh24/medllm-lora"
 
-print("--- Initializing Local CPU Inference Pipeline ---")
-print("Loading tokenizer from base model...")
-tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, token=HF_TOKEN)
-
-print("Loading base Llama 3.2 3B Instruct model in bfloat16 on CPU...")
-base_model = AutoModelForCausalLM.from_pretrained(
-    MODEL_ID,
-    torch_dtype=torch.bfloat16,
-    low_cpu_mem_usage=True,
-    token=HF_TOKEN
-)
-
-print("Sanitizing and downloading PEFT adapters locally...")
-local_adapter_dir = "./local_adapter"
-os.makedirs(local_adapter_dir, exist_ok=True)
-
-# 1. Download adapter weights
-try:
-    print("Downloading adapter_model.safetensors...")
-    hf_hub_download(repo_id=ADAPTER_ID, filename="adapter_model.safetensors", token=HF_TOKEN, local_dir=local_adapter_dir)
-except Exception:
-    print("safetensors fallback: Downloading adapter_model.bin...")
-    hf_hub_download(repo_id=ADAPTER_ID, filename="adapter_model.bin", token=HF_TOKEN, local_dir=local_adapter_dir)
-
-# 2. Download and sanitize adapter_config.json to strip custom/incompatible keys
-config_cache_path = hf_hub_download(repo_id=ADAPTER_ID, filename="adapter_config.json", token=HF_TOKEN)
-with open(config_cache_path, "r") as f:
-    config = json.load(f)
-
-# Dynamically filter config keys based on the installed PEFT version's LoraConfig signature
-lora_config_params = set(inspect.signature(LoraConfig.__init__).parameters.keys())
-sanitized_config = {k: v for k, v in config.items() if k in lora_config_params}
-
-# Save the sanitized config locally
-with open(os.path.join(local_adapter_dir, "adapter_config.json"), "w") as f:
-    json.dump(sanitized_config, f, indent=4)
-print("SUCCESS: Adapters successfully sanitized locally!")
-
-print("Merging PEFT LoRA adapters locally...")
-model = PeftModel.from_pretrained(base_model, local_adapter_dir)
-model.eval()
-print("SUCCESS: Local CPU Pipeline loaded successfully!")
+# Initialize high-speed Serverless InferenceClient
+client = InferenceClient(model=MODEL_ID, token=HF_TOKEN)
 
 def generate_medical_response(question):
     # Wrap in instruction prompt template
     prompt = f"[INST] {question.strip()} [/INST]"
-    inputs = tokenizer(prompt, return_tensors="pt")
     
-    # TextIteratorStreamer is ideal for asynchronous streaming output
-    streamer = TextIteratorStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True)
-    
-    generation_kwargs = dict(
-        **inputs,
-        streamer=streamer,
-        max_new_tokens=512,
-        do_sample=True,
-        temperature=0.1,
-        top_p=0.9,
-        pad_token_id=tokenizer.eos_token_id
-    )
-    
-    # Run text generation in a separate background thread
-    thread = Thread(target=model.generate, kwargs=generation_kwargs)
-    thread.start()
-    
-    # Yield streamed text token by token
     partial_response = ""
-    for chunk in streamer:
-        partial_response += chunk
-        yield partial_response
+    try:
+        # Query Hugging Face's high-speed GPU Serverless Inference API
+        stream = client.text_generation(
+            prompt,
+            max_new_tokens=512,
+            stream=True,
+            temperature=0.1,
+            top_p=0.9
+        )
+        
+        for chunk in stream:
+            partial_response += chunk
+            yield partial_response
+    except Exception as e:
+        yield f"Error querying Hugging Face Inference API: {str(e)}"
 
 # Premium HSL Custom CSS Styling
 custom_css = \"\"\"
@@ -214,7 +156,7 @@ footer {visibility: hidden}
 with gr.Blocks(css=custom_css, theme=gr.themes.Soft(primary_hue="blue", secondary_hue="indigo")) as demo:
     gr.HTML(\"\"\"
         <div class="title-box">
-            <h1>%EF%B8%8F MedLLM Interactive Assistant</h1>
+            <h1>🩺 MedLLM Interactive Assistant</h1>
             <p>Meta's Llama 3.2 3B Instruct fine-tuned on Medical Q&A (QLoRA)</p>
         </div>
     \"\"\")
@@ -226,7 +168,7 @@ with gr.Blocks(css=custom_css, theme=gr.themes.Soft(primary_hue="blue", secondar
                 placeholder="Type your medical query here... (e.g. What are the common symptoms of hypothyroidism?)",
                 label="Ask a medical question"
             )
-            submit_btn = gr.Button("Generate Answer %F0%9F%9A%80", variant="primary")
+            submit_btn = gr.Button("Generate Answer 🚀", variant="primary")
             
         with gr.Column(scale=3):
             output_box = gr.Textbox(
@@ -246,7 +188,7 @@ with gr.Blocks(css=custom_css, theme=gr.themes.Soft(primary_hue="blue", secondar
     
     gr.HTML(\"\"\"
         <div class="warning-box">
-            <p>%E2%9A%A0%EF%B8%8F <strong>Disclaimer:</strong> This model is an AI research proof-of-concept. It is not a certified medical tool or clinical decision support system. Information generated is purely educational and should not replace professional medical diagnosis or consultation.</p>
+            <p>⚠️ <strong>Disclaimer:</strong> This model is an AI research proof-of-concept. It is not a certified medical tool or clinical decision support system. Information generated is purely educational and should not replace professional medical diagnosis or consultation.</p>
         </div>
     \"\"\")
         
@@ -266,7 +208,7 @@ if __name__ == "__main__":
     demo.launch()
 """
 
-# 5. Push files to the Hub
+    # 5. Push files to the Hub
     print("Uploading deployment files directly to Hugging Face...")
     try:
         api.upload_file(
