@@ -19,7 +19,7 @@ graph TD
     subgraph Data ["1. Data Engineering (data/)"]
         D1[(lavita/MedQuAD Dataset)] --> D2[prepare_dataset.py]
         D2 -->|Noise Filter > 20 words| D3[Prompt Formatting]
-        D3 -->|Llama 3 [INST] Template| D4[Split 90/5/5]
+        D3 -->|"Llama 3 [INST] Template"| D4[Split 90/5/5]
         D4 -->|train.jsonl / val.jsonl / test.jsonl| D5[Hugging Face Hub / local]
     end
 
